@@ -3,6 +3,9 @@
 # ==========================
 .streamlit/secrets.toml
 .streamlit/secrets.toml.bak
+.streamlit/secrets.toml.save
+!.streamlit/.gitkeep
+
 .env
 .env.*
 
