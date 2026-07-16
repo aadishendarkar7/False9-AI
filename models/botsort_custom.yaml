@@ -1,0 +1,21 @@
+# Custom BoT-SORT config — same defaults Ultralytics ships, except
+# track_buffer is doubled (30 -> 60) so a player who's briefly occluded or
+# missed by the detector for longer stretches is more likely to keep their
+# original ID instead of being assigned a new one when they reappear.
+#
+# BoT-SORT (vs plain ByteTrack) adds appearance-based re-identification and
+# camera-motion compensation, both of which help specifically with the kind
+# of occlusion/clutter common in football footage. It's somewhat slower.
+#
+# This helps — it does not fully solve — ID switches. It cannot recover
+# identity across an actual camera cut/replay/zoom, since the whole scene
+# changes; that's a fundamental limit of tracking-by-detection, not a
+# parameter to tune away.
+
+tracker_type: botsort
+track_high_thresh: 0.25
+track_low_thresh: 0.1
+new_track_thresh: 0.25
+track_buffer: 60
+match_thresh: 0.8
+fuse_score: true

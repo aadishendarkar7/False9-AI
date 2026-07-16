@@ -1,0 +1,13 @@
+streamlit
+groq
+requests
+plotly
+ultralytics
+opencv-python-headless
+numpy
+pandas
+streamlit-image-coordinates
+pillow
+imageio[ffmpeg]
+pyyaml
+scipy

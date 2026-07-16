@@ -1,0 +1,55 @@
+# ==========================
+# Secrets / API Keys
+# ==========================
+.streamlit/secrets.toml
+.streamlit/secrets.toml.bak
+.env
+.env.*
+
+# ==========================
+# Python
+# ==========================
+venv/
+venv312/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# ==========================
+# Streamlit
+# ==========================
+.streamlit/cache/
+.streamlit/logs/
+
+# ==========================
+# User Generated Files
+# ==========================
+uploads/*
+!uploads/.gitkeep
+
+outputs/*
+!outputs/.gitkeep
+
+# ==========================
+# AI Models / Weights
+# ==========================
+*.pt
+*.pth
+*.onnx
+
+# ==========================
+# OS Files
+# ==========================
+.DS_Store
+
+# ==========================
+# IDE
+# ==========================
+.idea/
+.vscode/
+
+# ==========================
+# Jupyter
+# ==========================
+.ipynb_checkpoints/

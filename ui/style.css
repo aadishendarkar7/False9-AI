@@ -1,0 +1,485 @@
+/* ============================================================
+   FALSE9 AI — pitch-tactics themed UI
+   ============================================================ */
+
+*{ box-sizing: border-box; }
+
+:root{
+  --pitch-black:#05130D;
+  --pitch-dark:#0A2A1C;
+  --pitch-mid:#124B30;
+  --chalk:#E9EDE4;
+  --chalk-dim:#9FB3A6;
+  --amber:#FFB454;
+  --red-card:#FF4B4B;
+  --font-display:'Bebas Neue', 'Archivo Black', sans-serif;
+  --font-body:'Inter', Arial, sans-serif;
+}
+
+body{
+  margin:0;
+  font-family:var(--font-body);
+  background:var(--pitch-black);
+  color:var(--chalk);
+}
+
+/* ---------- BOOT SEQUENCE (plays on top, never gates hero visibility) ---------- */
+.boot-screen{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:var(--pitch-black);
+  transition:opacity .6s ease;
+}
+.boot-screen.boot-hidden{ opacity:0; pointer-events:none; }
+.boot-logo{
+  font-family:var(--font-display);
+  font-size:42px;
+  letter-spacing:.08em;
+  color:var(--chalk);
+  margin-bottom:28px;
+}
+.boot-lines{
+  font-family:var(--font-body);
+  font-size:14px;
+  color:var(--chalk-dim);
+  min-height:140px;
+  width:320px;
+  text-align:left;
+}
+.boot-line{
+  opacity:0;
+  margin:6px 0;
+  transform:translateY(4px);
+  transition:opacity .25s ease, transform .25s ease;
+}
+.boot-line.visible{ opacity:1; transform:translateY(0); }
+.boot-line.status{ color:var(--amber); font-weight:600; margin-top:14px; }
+
+/* ---------- BACKGROUND: mowed-pitch stripes — ALWAYS fully visible, no JS gate ---------- */
+.background{
+  position:relative;
+  min-height:700px;
+  overflow:hidden;
+  background:
+    repeating-linear-gradient(
+      100deg,
+      var(--pitch-dark) 0px,
+      var(--pitch-dark) 90px,
+      var(--pitch-mid) 90px,
+      var(--pitch-mid) 180px
+    );
+}
+
+/* vignette + floodlight wash from the top, sits above stripes */
+.background::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(255,180,84,.16), transparent 60%),
+    linear-gradient(180deg, rgba(5,19,13,.35) 0%, rgba(5,19,13,.85) 75%, var(--pitch-black) 100%);
+  pointer-events:none;
+}
+
+/* scoreboard readout — clear, legible decoration for the empty upper space */
+.scoreboard{
+  position:absolute;
+  top:24px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:1;
+  display:flex;
+  gap:14px;
+  align-items:center;
+  font-family:var(--font-body);
+  font-size:12px;
+  letter-spacing:.12em;
+  color:rgba(233,237,228,.35);
+  white-space:nowrap;
+}
+.scoreboard .dot-sep{ color:rgba(255,180,84,.5); }
+
+/* subtle scanning light sweep */
+.scan-sweep{
+  position:absolute;
+  left:0; right:0;
+  height:140px;
+  z-index:1;
+  background:linear-gradient(180deg, transparent, rgba(233,237,228,.05), transparent);
+  animation:scanDown 9s linear infinite;
+  pointer-events:none;
+}
+@keyframes scanDown{
+  0%{ top:-140px; opacity:0; }
+  10%{ opacity:1; }
+  90%{ opacity:1; }
+  100%{ top:100%; opacity:0; }
+}
+
+/* ---------- TACTICS PITCH (the signature element) ---------- */
+.tactics-pitch{
+  position:absolute;
+  z-index:1;
+  top:40px;
+  left:50%;
+  transform:translateX(-50%);
+  width:900px;
+  max-width:140vw;
+  height:640px;
+  pointer-events:none;
+  opacity:.55;
+}
+.tactics-pitch .halfway-line{
+  position:absolute;
+  top:50%; left:0; right:0;
+  height:1px;
+  background:rgba(233,237,228,.18);
+}
+.tactics-pitch .center-circle{
+  position:absolute;
+  top:50%; left:50%;
+  width:220px; height:220px;
+  border:1px solid rgba(233,237,228,.18);
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+}
+.tactics-pitch .center-spot{
+  position:absolute;
+  top:50%; left:50%;
+  width:6px; height:6px;
+  border-radius:50%;
+  background:rgba(233,237,228,.25);
+  transform:translate(-50%,-50%);
+}
+.tactics-pitch .box{
+  position:absolute;
+  left:50%;
+  width:340px; height:130px;
+  border:1px solid rgba(233,237,228,.18);
+  transform:translateX(-50%);
+}
+.tactics-pitch .box.top{ top:0; border-top:none; }
+.tactics-pitch .box.bottom{ bottom:0; border-bottom:none; }
+
+/* player dots */
+.dot{
+  position:absolute;
+  width:12px; height:12px;
+  border-radius:50%;
+  background:var(--chalk-dim);
+  box-shadow:0 0 8px rgba(233,237,228,.4);
+  transform:translate(-50%,-50%);
+}
+.dot.false9{
+  background:var(--amber);
+  box-shadow:0 0 16px rgba(255,180,84,.9);
+  animation:drop-deep 6s ease-in-out infinite;
+}
+@keyframes drop-deep{
+  0%,100%{ top:18%; }
+  50%{ top:46%; }
+}
+
+/* ---------- HERO ---------- */
+.hero{
+  position:relative;
+  z-index:2;
+  text-align:center;
+  padding:130px 24px 90px;
+}
+
+.eyebrow{
+  font-family:var(--font-body);
+  font-size:13px;
+  letter-spacing:.35em;
+  text-transform:uppercase;
+  color:var(--amber);
+  margin-bottom:18px;
+}
+
+h1{
+  font-family:var(--font-display);
+  font-size:120px;
+  line-height:.95;
+  letter-spacing:.02em;
+  margin:0;
+  color:var(--chalk);
+  text-shadow:0 0 30px rgba(255,180,84,.25);
+}
+h1 .nine{ color:var(--amber); }
+
+h2{
+  font-family:var(--font-body);
+  font-weight:400;
+  font-size:22px;
+  color:var(--chalk-dim);
+  margin:22px auto 6px;
+  max-width:560px;
+}
+
+.typing{
+  font-family:var(--font-body);
+  font-size:16px;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--amber);
+  margin-top:14px;
+  min-height:24px;
+}
+.typing .cursor{
+  display:inline-block;
+  width:8px;
+  margin-left:2px;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink{ 50%{ opacity:0; } }
+
+button.cta{
+  margin-top:38px;
+  padding:16px 46px;
+  border-radius:4px;
+  border:1px solid var(--amber);
+  background:transparent;
+  color:var(--chalk);
+  font-family:var(--font-display);
+  font-size:18px;
+  letter-spacing:.1em;
+  cursor:pointer;
+  transition:.25s ease;
+  position:relative;
+  overflow:hidden;
+}
+button.cta:hover{
+  background:var(--amber);
+  color:var(--pitch-black);
+  box-shadow:0 0 30px rgba(255,180,84,.5);
+  transform:translateY(-2px);
+}
+
+/* ---------- STAT / FEATURE CARDS ---------- */
+.cards{
+  position:relative;
+  z-index:2;
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:22px;
+  margin-top:90px;
+  padding:0 24px;
+}
+
+.card{
+  position:relative;
+  overflow:hidden;
+  width:270px;
+  padding:28px 26px;
+  text-align:left;
+  background:rgba(233,237,228,.04);
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(233,237,228,.12);
+  border-left:3px solid var(--amber);
+  border-radius:6px;
+  transition:.3s ease;
+}
+.card:hover{
+  transform:translateY(-8px);
+  border-left-color:var(--red-card);
+  box-shadow:0 20px 50px rgba(0,0,0,.4);
+}
+.card .kit-number{
+  font-family:var(--font-display);
+  font-size:34px;
+  color:var(--amber);
+  display:block;
+  margin-bottom:10px;
+}
+.card h3{
+  font-family:var(--font-display);
+  font-size:22px;
+  letter-spacing:.03em;
+  margin:0 0 8px;
+  color:var(--chalk);
+}
+.card p{
+  font-size:14px;
+  line-height:1.5;
+  color:var(--chalk-dim);
+  margin:0;
+}
+
+/* ---------- FOOTER ---------- */
+footer{
+  position:relative;
+  z-index:2;
+  text-align:center;
+  margin-top:80px;
+  padding-bottom:50px;
+  font-size:13px;
+  letter-spacing:.05em;
+  color:var(--chalk-dim);
+}
+
+/* ---------- KICKOFF TRANSITION ---------- */
+.kickoff-overlay{
+  position:fixed;
+  inset:0;
+  z-index:999;
+  pointer-events:none;
+  opacity:0;
+  background:var(--amber);
+}
+.kickoff-overlay.active{ animation:kickoffBlast .9s cubic-bezier(.2,.7,.3,1) forwards; }
+@keyframes kickoffBlast{
+  0%{ opacity:0; } 15%{ opacity:.9; } 40%{ opacity:.35; } 100%{ opacity:0; }
+}
+.kickoff-lines{ position:fixed; inset:0; z-index:998; pointer-events:none; opacity:0; }
+.kickoff-lines.active{ animation:linesFade .9s ease-out forwards; }
+.kickoff-lines::before, .kickoff-lines::after{
+  content:"";
+  position:absolute;
+  top:50%; left:50%;
+  width:2px; height:0%;
+  background:linear-gradient(180deg, transparent, var(--chalk), transparent);
+  transform:translate(-50%,-50%) rotate(0deg);
+}
+.kickoff-lines::before{ animation:sweepLine .9s ease-out forwards; }
+.kickoff-lines::after{ animation:sweepLine .9s .05s ease-out forwards; transform:translate(-50%,-50%) rotate(90deg); }
+@keyframes sweepLine{ 0%{ height:0%; opacity:0;} 30%{ opacity:1;} 100%{ height:160%; opacity:0;} }
+@keyframes linesFade{ 0%{ opacity:1;} 100%{ opacity:0;} }
+
+.pulse-ring{
+  position:absolute;
+  border:2px solid var(--amber);
+  border-radius:6px;
+  inset:0;
+  opacity:0;
+}
+.pulse-ring.active{ animation:pulseRing .5s ease-out; }
+@keyframes pulseRing{ 0%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(1.08);} }
+
+/* ---------- GOAL CELEBRATION (plays on quick-prompt card clicks) ---------- */
+.goal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:1002;
+  pointer-events:none;
+  overflow:hidden;
+}
+
+.goal-net{
+  position:absolute;
+  top:50%; left:50%;
+  width:200px; height:140px;
+  transform:translate(-50%,-65%) scale(.6);
+  opacity:0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 11px, rgba(233,237,228,.55) 11px 12px),
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(233,237,228,.55) 11px 12px);
+  border:2px solid rgba(233,237,228,.65);
+  border-bottom:none;
+}
+.goal-overlay.active .goal-net{ animation:netAppear 1.1s ease-out forwards; }
+@keyframes netAppear{
+  0%{ opacity:0; transform:translate(-50%,-65%) scale(.6); }
+  35%{ opacity:.9; transform:translate(-50%,-65%) scale(1); }
+  45%{ transform:translate(-50%,-65%) scale(1.1,.9); }
+  55%{ transform:translate(-50%,-65%) scale(.95,1.06); }
+  65%{ transform:translate(-50%,-65%) scale(1,1); }
+  100%{ opacity:0; transform:translate(-50%,-65%) scale(1,1); }
+}
+
+.goal-ball{
+  position:absolute;
+  left:50%;
+  bottom:-60px;
+  font-size:44px;
+  line-height:1;
+  transform:translate(-50%,0);
+}
+.goal-overlay.active .goal-ball{ animation:ballFly .45s cubic-bezier(.32,.6,.4,1) forwards; }
+@keyframes ballFly{
+  0%{ bottom:-60px; transform:translate(-50%,0) scale(.6) rotate(0deg); opacity:1; }
+  100%{ bottom:56%; transform:translate(-50%,0) scale(1.15) rotate(340deg); opacity:0; }
+}
+
+.goal-text{
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%) scale(0);
+  font-family:var(--font-display);
+  font-size:84px;
+  letter-spacing:.06em;
+  color:var(--amber);
+  text-shadow:0 0 45px rgba(255,180,84,.85);
+  opacity:0;
+}
+.goal-overlay.active .goal-text{
+  animation:goalTextPop 1.1s cubic-bezier(.2,1.5,.4,1) forwards;
+  animation-delay:.4s;
+}
+@keyframes goalTextPop{
+  0%{ opacity:0; transform:translate(-50%,-50%) scale(0); }
+  30%{ opacity:1; transform:translate(-50%,-50%) scale(1.15); }
+  45%{ transform:translate(-50%,-50%) scale(.95); }
+  60%{ transform:translate(-50%,-50%) scale(1); }
+  82%{ opacity:1; }
+  100%{ opacity:0; transform:translate(-50%,-50%) scale(1.05); }
+}
+
+.goal-particle{
+  position:absolute;
+  top:50%; left:50%;
+  width:6px; height:6px;
+  border-radius:50%;
+  background:var(--amber);
+  box-shadow:0 0 10px var(--amber);
+  opacity:0;
+  transform:translate(-50%,-50%);
+}
+.goal-overlay.active .goal-particle{
+  animation:particleBurst .8s ease-out forwards;
+  animation-delay:.42s;
+}
+@keyframes particleBurst{
+  0%{ opacity:0; transform:translate(-50%,-50%) translate(0,0) scale(1); }
+  15%{ opacity:1; }
+  100%{ opacity:0; transform:translate(-50%,-50%) translate(var(--dx), var(--dy)) scale(.3); }
+}
+
+/* brief camera-shake on impact */
+@keyframes shake{
+  0%,100%{ transform:translate(0,0); }
+  20%{ transform:translate(-6px,3px); }
+  40%{ transform:translate(6px,-3px); }
+  60%{ transform:translate(-4px,2px); }
+  80%{ transform:translate(4px,-2px); }
+}
+body.shake{ animation:shake .35s ease; }
+
+/* ---------- FLOODLIGHT MOUSE GLOW ---------- */
+.mouseGlow{
+  position:fixed;
+  z-index:0;
+  width:340px; height:340px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,180,84,.14), transparent 70%);
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:700px){
+  h1{ font-size:64px; }
+  h2{ font-size:17px; }
+  .tactics-pitch{ top:10px; height:480px; }
+  .hero{ padding-top:90px; }
+  .cards{ margin-top:60px; }
+  .boot-lines{ width:85vw; font-size:13px; }
+  .boot-logo{ font-size:32px; }
+}
