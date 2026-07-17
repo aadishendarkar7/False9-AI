@@ -3,7 +3,8 @@ groq
 requests
 plotly
 ultralytics
-opencv-contrib-python-headlessnumpy
+opencv-python-headless
+numpy
 pandas
 streamlit-image-coordinates
 pillow
