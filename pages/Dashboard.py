@@ -7,6 +7,7 @@ from utils.football_data import get_standings_with_fallback, get_standings, FOOT
 from utils.groq_client import get_client, generate_ai_insight
 from utils.video_processing import list_uploaded_videos
 
+
 st.set_page_config(page_title="False9 AI — Dashboard", page_icon="⚽", layout="wide")
 apply_theme()
 
