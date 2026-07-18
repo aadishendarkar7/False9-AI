@@ -3,10 +3,9 @@ import streamlit.components.v1 as components
 import plotly.graph_objects as go
 
 from utils.page_style import apply_theme
-from utils.football_data import get_standings_with_fallback, get_standings, FOOTBALL_DATA_KEY, TEAM_IDS
+from utils.football_data import get_standings_with_fallback, get_standings, get_live_matches, FOOTBALL_DATA_KEY, TEAM_IDS
 from utils.groq_client import get_client, generate_ai_insight
 from utils.video_processing import list_uploaded_videos
-
 
 st.set_page_config(page_title="False9 AI — Dashboard", page_icon="⚽", layout="wide")
 apply_theme()
@@ -17,6 +16,37 @@ st.caption(
     "Live where the data actually exists today; honest placeholders where "
     "it doesn't yet (those land in the phases noted below)."
 )
+
+# ---------------------------------------------------------------------------
+# Live scoreboard — real, currently in-play matches across every
+# competition this API key covers. Cached 30s (see get_live_matches),
+# refreshed on demand rather than auto-polling, to keep API usage sane.
+# ---------------------------------------------------------------------------
+if FOOTBALL_DATA_KEY:
+    live_col1, live_col2 = st.columns([5, 1])
+    with live_col1:
+        st.markdown("### 🔴 Live Now")
+    with live_col2:
+        if st.button("🔄 Refresh", key="refresh_live"):
+            get_live_matches.clear()
+            st.rerun()
+
+    live_matches = get_live_matches()
+    if not live_matches:
+        st.caption("No matches live right now.")
+    else:
+        live_html = '<div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;">'
+        for m in live_matches:
+            time_label = "HT" if m["status"] == "PAUSED" else f"{m['minute']}\u2019"
+            live_html += (
+                '<div class="f9-card" style="flex:1; min-width:240px;">'
+                f'<div style="font-size:11px; color:#FFB454; text-transform:uppercase; letter-spacing:.05em;">{m["competition"]} \u2022 {time_label}</div>'
+                f'<div style="font-size:16px; font-weight:600; margin-top:6px;">{m["home_team"]} {m["home_score"]} \u2013 {m["away_score"]} {m["away_team"]}</div>'
+                '</div>'
+            )
+        live_html += "</div>"
+        st.markdown(live_html, unsafe_allow_html=True)
+    st.markdown("---")
 
 # ---------------------------------------------------------------------------
 # KPI row — real numbers derived from actual app state, not invented stats.
