@@ -11,3 +11,4 @@ pillow
 imageio[ffmpeg]
 pyyaml
 scipy
+lapx>=0.5.2
