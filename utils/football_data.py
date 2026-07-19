@@ -40,6 +40,59 @@ else:
     }
 
 
+@st.cache_data(ttl=30, show_spinner=False)
+def get_live_matches() -> list[dict]:
+    """All matches currently in progress or at half-time, across every
+    competition this API key has access to. football-data.org's 'LIVE'
+    filter is a convenience that combines IN_PLAY and PAUSED under the hood.
+
+    Cached briefly (30s, not the usual 5min) since live scores genuinely
+    need to stay fresh — but this cache still protects the free tier's
+    rate limit, since it's shared across every user/rerun hitting this
+    within that window, not a per-request call."""
+    if not FOOTBALL_DATA_KEY:
+        return []
+    try:
+        resp = requests.get(
+            "https://api.football-data.org/v4/matches",
+            headers={"X-Auth-Token": FOOTBALL_DATA_KEY},
+            params={"status": "LIVE"},
+            timeout=8,
+        )
+        resp.raise_for_status()
+        matches = resp.json().get("matches", [])
+    except Exception:
+        return []
+
+    return [
+        {
+            "competition": m["competition"]["name"],
+            "home_team": m["homeTeam"]["name"],
+            "away_team": m["awayTeam"]["name"],
+            "home_score": m["score"]["fullTime"].get("home") or 0,
+            "away_score": m["score"]["fullTime"].get("away") or 0,
+            "minute": m.get("minute"),
+            "status": m["status"],  # IN_PLAY or PAUSED (half-time)
+        }
+        for m in matches
+    ]
+
+
+def get_live_matches_text() -> str:
+    """Text form for the AI assistant's context."""
+    matches = get_live_matches()
+    if not matches:
+        return "No matches are currently live."
+    lines = []
+    for m in matches:
+        time_label = "HT" if m["status"] == "PAUSED" else f"{m['minute']}'"
+        lines.append(
+            f"{m['home_team']} {m['home_score']}-{m['away_score']} "
+            f"{m['away_team']} ({time_label}) [{m['competition']}]"
+        )
+    return "Live matches right now:\n" + "\n".join(lines)
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def get_upcoming_fixtures(team_name: str) -> str:
     """Next 5 scheduled matches for a team. Cached 5 min so we don't blow
@@ -123,9 +176,9 @@ def get_standings_table(competition_name: str, season: int | None = None) -> lis
 def get_standings_with_fallback(competition_name: str) -> tuple[list[dict], bool]:
     """Same as get_standings_table, but if the 'current' season shows 0
     games played for every team (i.e. it's the off-season and the new
-    season hasn't started yet — true for all our supported leagues as of
-    mid-July 2026), falls back to last season's final standings instead of
-    just returning nothing. Returns (rows, used_previous_season)."""
+    season hasn't started yet), falls back to last season's final
+    standings instead of just returning nothing. Returns (rows,
+    used_previous_season)."""
     rows = get_standings_table(competition_name)
     if rows and sum(r["played"] for r in rows) > 0:
         return rows, False
